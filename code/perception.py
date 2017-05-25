@@ -1,21 +1,8 @@
 import numpy as np
 import cv2
 
-# Identify pixels above the threshold
-# Threshold of RGB > 160 does a nice job of identifying ground pixels only
-def color_thresh(img, rgb_thresh=(160, 160, 160)):
-    # Create an array of zeros same xy size as img, but single channel
-    color_select = np.zeros_like(img[:,:,0])
-    # Require that each pixel be above all three threshold values in RGB
-    # above_thresh will now contain a boolean array with "True"
-    # where threshold was met
-    above_thresh = (img[:,:,0] > rgb_thresh[0]) \
-                & (img[:,:,1] > rgb_thresh[1]) \
-                & (img[:,:,2] > rgb_thresh[2])
-    # Index the array of zeros with the boolean array and set to 1
-    color_select[above_thresh] = 1
-    # Return the binary image
-    return color_select
+from threshold_functions import ball_threshold, rock_threshold, sand_threshold
+
 
 # Define a function to convert to rover-centric coordinates
 def rover_coords(binary_img):
@@ -40,26 +27,34 @@ def to_polar_coords(x_pixel, y_pixel):
 
 # Define a function to apply a rotation to pixel positions
 def rotate_pix(xpix, ypix, yaw):
-    # TODO:
-    # Convert yaw to radians
-    # Apply a rotation
-    xpix_rotated = 0
-    ypix_rotated = 0
-    # Return the result  
+    # Convert yaw to radians and apply rotation
+    yaw_rad = yaw * np.pi / 180.0
+    xpix_rotated = xpix * np.cos(yaw_rad) - ypix * np.sin(yaw_rad)
+    ypix_rotated = xpix * np.sin(yaw_rad) + ypix * np.sin(yaw_rad)
+    
     return xpix_rotated, ypix_rotated
 
 # Define a function to perform a translation
 def translate_pix(xpix_rot, ypix_rot, xpos, ypos, scale): 
-    # TODO:
     # Apply a scaling and a translation
-    xpix_translated = 0
-    ypix_translated = 0
-    # Return the result  
+    xpix_translated = np.int_(xpos + xpix_rot/scale)
+    ypix_translated = np.int_(ypos + ypix_rot/scale)
+    
     return xpix_translated, ypix_translated
+
+def correct4Roll(xpix, ypix, roll):
+    roll_rad = roll * np.pi / 180.0
+    return np.cos(roll_rad)*xpix, ypix
+
+def correct4Pitch(xpix, ypix, pitch):
+    pitch_rad = pitch * np.pi / 180.0
+    return xpix, np.cos(pitch_rad)*ypix
 
 # Define a function to apply rotation and translation (and clipping)
 # Once you define the two functions above this function should work
-def pix_to_world(xpix, ypix, xpos, ypos, yaw, world_size, scale):
+def pix_to_world(xpix, ypix, xpos, ypos, yaw, pitch, roll, world_size, scale):
+    xpix, ypix = correct4Roll(xpix, ypix, roll)
+    xpix, ypix = correct4Pitch(xpix, ypix, pitch)
     # Apply rotation
     xpix_rot, ypix_rot = rotate_pix(xpix, ypix, yaw)
     # Apply translation
@@ -79,31 +74,99 @@ def perspect_transform(img, src, dst):
     return warped
 
 
+def convertFindings2world(threshold, Rover):
+    # 4) Convert thresholded image pixel values to rover-centric coords
+    x_pixels, y_pixels = rover_coords(threshold)
+    # 5) Convert rover-centric pixel values to world coords
+    worldsize = 200
+    scale = 20
+    x_world, y_world = pix_to_world(x_pixels, y_pixels, Rover.pos[0], Rover.pos[1], Rover.yaw,Rover.pitch, Rover.roll, worldsize, scale)
+
+    return x_world, y_world
+
+def correctForAngles(img, roll, pitch, yaw):
+    roll_rad = roll * np.pi / 180.0
+    pitch_rad = pitch * np.pi / 180.0
+    yaw_rad = yaw * np.pi / 180.0
+
+    R_x = np.array([np.array([1, 0, 0 ]),
+                    np.array([0, np.cos(roll_rad), -np.sin(roll_rad)]),
+                    np.array([0, np.sin(roll_rad), np.cos(roll_rad)])
+                    ])
+
+    R_y = np.array([np.array([np.cos(pitch_rad), 0, np.sin(pitch_rad)]),
+                    np.array([0, 1, 0]),
+                    np.array([-np.sin(pitch_rad), 0, np.cos(pitch_rad)])
+                    ])
+
+    R_z = np.array([np.array([np.cos(yaw_rad), -np.sin(yaw_rad), 0]),
+                    np.array([np.sin(yaw_rad), np.cos(yaw_rad), 0]),
+                    np.array([0, 0, 1])
+                    ])
+    R = R_z * R_y * R_x
+    
+    outputImage = cv2.warpPerspective(img, R, (img.shape[1], img.shape[0]))
+    return outputImage
+
+def extremeAngles(pitch, roll):
+    p_thresh = 1
+    r_thresh = 1
+    return (pitch > p_thresh and pitch < 360-p_thresh) or (roll > r_thresh and roll < 360-r_thresh)
+    
 # Apply the above functions in succession and update the Rover state accordingly
 def perception_step(Rover):
     # Perform perception steps to update Rover()
     # TODO: 
     # NOTE: camera image is coming to you in Rover.img
     # 1) Define source and destination points for perspective transform
+    image = Rover.img
+    dst_size = 10
+    bottom_offset = 7
+    source = np.float32([[14, 140], [301 ,140],[200, 96], [118, 96]])
+    destination = np.float32([[image.shape[1]/2 - dst_size, image.shape[0] - bottom_offset],
+                  [image.shape[1]/2 + dst_size, image.shape[0] - bottom_offset],
+                  [image.shape[1]/2 + dst_size, image.shape[0] - 2*dst_size - bottom_offset], 
+                  [image.shape[1]/2 - dst_size, image.shape[0] - 2*dst_size - bottom_offset],
+                  ])
     # 2) Apply perspective transform
+    img = Rover.img#correctForAngles(Rover.img, 0, 0, 0)
+    warped = perspect_transform(img, source, destination)
     # 3) Apply color threshold to identify navigable terrain/obstacles/rock samples
+    sand = sand_threshold(warped)
+    rock = rock_threshold(warped)
+    ball = ball_threshold(warped)
+    
+    
     # 4) Update Rover.vision_image (this will be displayed on left side of screen)
+    Rover.vision_image[:,:, 0] = rock
+    Rover.vision_image[:,:, 1] = ball
+    Rover.vision_image[:,:, 2] = sand
         # Example: Rover.vision_image[:,:,0] = obstacle color-thresholded binary image
         #          Rover.vision_image[:,:,1] = rock_sample color-thresholded binary image
         #          Rover.vision_image[:,:,2] = navigable terrain color-thresholded binary image
 
     # 5) Convert map image pixel values to rover-centric coords
     # 6) Convert rover-centric pixel values to world coordinates
+
+    sand_x_world, sand_y_world = convertFindings2world(sand, Rover)
+    rock_x_world, rock_y_world = convertFindings2world(rock, Rover)
+    ball_x_world, ball_y_world = convertFindings2world(ball, Rover)
     # 7) Update Rover worldmap (to be displayed on right side of screen)
         # Example: Rover.worldmap[obstacle_y_world, obstacle_x_world, 0] += 1
-        #          Rover.worldmap[rock_y_world, rock_x_world, 1] += 1
+        #          Rover.worldmap[rock_y_world, roc0k_x_world, 1] += 1
         #          Rover.worldmap[navigable_y_world, navigable_x_world, 2] += 1
-
+    if not extremeAngles(Rover.pitch, Rover.roll):
+        Rover.worldmap[rock_y_world, rock_x_world, 0] += 1
+        Rover.worldmap[ball_y_world, ball_x_world, 1] += 1
+        Rover.worldmap[sand_y_world, sand_x_world, 2] += 1
     # 8) Convert rover-centric pixel positions to polar coordinates
     # Update Rover pixel distances and angles
         # Rover.nav_dists = rover_centric_pixel_distances
         # Rover.nav_angles = rover_centric_angles
-    
+    x_pixels, y_pixels = rover_coords(sand)
+    dist, angles = to_polar_coords(x_pixels, y_pixels)
+    Rover.nav_dists = dist
+    Rover.nav_angles = angles
  
     
     
