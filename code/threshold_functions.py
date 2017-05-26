@@ -71,7 +71,11 @@ def sand_threshold(img):
     #YCC = YCC_find_sand(img)
     YUV = YUV_find_sand(img)
     #Lab = Lab_find_sand(img)
-    return YUV
+    kernel = np.ones((5,5),np.uint8)
+    dilation = cv2.dilate(YUV,kernel,iterations = 0)
+    #return dilation
+    erosion = cv2.erode(dilation,kernel,iterations = 0)
+    return erosion
 
 
 ### Rock Functions ###
@@ -97,7 +101,11 @@ def Lab_find_rock(img):
     return Lab_threshold(img, (1,108, 128), (102, 148, 255))
 
 def rock_threshold(img):
-    return Lab_find_rock(img)
+    rock = Lab_find_rock(img)
+    kernel = np.ones((5,5),np.uint8)
+    dilation = cv2.dilate(rock,kernel,iterations = 0)
+    erosion = cv2.erode(dilation,kernel,iterations = 0)
+    return erosion
 
 ### Ball Functions ###
 def LUV_find_ball(img):

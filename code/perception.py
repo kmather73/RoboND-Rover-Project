@@ -30,7 +30,7 @@ def rotate_pix(xpix, ypix, yaw):
     # Convert yaw to radians and apply rotation
     yaw_rad = yaw * np.pi / 180.0
     xpix_rotated = xpix * np.cos(yaw_rad) - ypix * np.sin(yaw_rad)
-    ypix_rotated = xpix * np.sin(yaw_rad) + ypix * np.sin(yaw_rad)
+    ypix_rotated = xpix * np.sin(yaw_rad) + ypix * np.cos(yaw_rad)
     
     return xpix_rotated, ypix_rotated
 
@@ -53,7 +53,7 @@ def correct4Pitch(xpix, ypix, pitch):
 # Define a function to apply rotation and translation (and clipping)
 # Once you define the two functions above this function should work
 def pix_to_world(xpix, ypix, xpos, ypos, yaw, pitch, roll, world_size, scale):
-    xpix, ypix = correct4Roll(xpix, ypix, roll)
+    #xpix, ypix = correct4Roll(xpix, ypix, roll)
     xpix, ypix = correct4Pitch(xpix, ypix, pitch)
     # Apply rotation
     xpix_rot, ypix_rot = rotate_pix(xpix, ypix, yaw)
@@ -109,10 +109,57 @@ def correctForAngles(img, roll, pitch, yaw):
     return outputImage
 
 def extremeAngles(pitch, roll):
-    p_thresh = 1
-    r_thresh = 1
+    p_thresh = 1.05
+    r_thresh = 1.05
     return (pitch > p_thresh and pitch < 360-p_thresh) or (roll > r_thresh and roll < 360-r_thresh)
-    
+
+import numpy as np
+
+def correctRotateImage(img, angle):
+  
+    (h, w) = img.shape[:2]
+    (cX, cY) = (w // 2, h//2 )
+
+    M = cv2.getRotationMatrix2D((cX, cY), angle, 1.0)
+ 
+    # perform the actual rotation and return the image
+    return cv2.warpAffine(img, M, (w, h), flags=cv2.INTER_LINEAR)
+
+def getBestContour(threshold):
+    im2,contours, hierarchy = cv2.findContours(threshold,cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    cnt = None
+    area = 0
+    for ct in contours:
+        ctArea = cv2.contourArea(ct)
+        if ctArea > area:
+            area = ctArea
+            cnt = ct
+            
+    return cnt, area
+
+def maskImg(img, mask):
+    return cv2.bitwise_and(img,img, mask=mask)
+
+def maskLeftSide(img):
+    if len(img.shape) == 3:
+        mask = np.zeros_like(img[:,:,0])
+    else:
+        mask = np.zeros_like(img[:,:])
+
+    mask[:, mask.shape[1]*3/8:] = 1
+    return maskImg(img, mask)
+
+def maskStraightAhead(img):
+    if len(img.shape) == 3:
+        mask = np.zeros_like(img[:,:,0])
+    else:
+        mask = np.zeros_like(img[:,:])
+
+    (w, h) = mask.shape
+    offset = w/10
+    mask[w/2 - offset:w - offset, h/4 : h*3/4] = 1
+    return maskImg(img, mask)
+
 # Apply the above functions in succession and update the Rover state accordingly
 def perception_step(Rover):
     # Perform perception steps to update Rover()
@@ -123,20 +170,32 @@ def perception_step(Rover):
     dst_size = 10
     bottom_offset = 7
     source = np.float32([[14, 140], [301 ,140],[200, 96], [118, 96]])
-    destination = np.float32([[image.shape[1]/2 - dst_size, image.shape[0] - bottom_offset],
+    destination = np.float32([
+                  [image.shape[1]/2 - dst_size, image.shape[0] - bottom_offset],
                   [image.shape[1]/2 + dst_size, image.shape[0] - bottom_offset],
                   [image.shape[1]/2 + dst_size, image.shape[0] - 2*dst_size - bottom_offset], 
                   [image.shape[1]/2 - dst_size, image.shape[0] - 2*dst_size - bottom_offset],
                   ])
     # 2) Apply perspective transform
-    img = Rover.img#correctForAngles(Rover.img, 0, 0, 0)
+    img = Rover.img
+    correctionAngle = Rover.roll-360 if Rover.roll > 180 else -Rover.roll
+    img = correctRotateImage(img, correctionAngle)#correctForAngles(Rover.img, 0, 0, 0)
     warped = perspect_transform(img, source, destination)
     # 3) Apply color threshold to identify navigable terrain/obstacles/rock samples
     sand = sand_threshold(warped)
     rock = rock_threshold(warped)
     ball = ball_threshold(warped)
     
-    
+    sn, sandArea = getBestContour(np.copy(sand))
+    rn, rockArea = getBestContour(np.copy(rock))
+    bn, ballArea = getBestContour(np.copy(ball))
+    if sn is not None:
+        Rover.sandArea = sandArea
+    if rn is not None:
+        Rover.rockArea = rockArea
+    if bn is not None:
+        Rover.ballArea = ballArea
+
     # 4) Update Rover.vision_image (this will be displayed on left side of screen)
     Rover.vision_image[:,:, 0] = rock
     Rover.vision_image[:,:, 1] = ball
@@ -163,11 +222,11 @@ def perception_step(Rover):
     # Update Rover pixel distances and angles
         # Rover.nav_dists = rover_centric_pixel_distances
         # Rover.nav_angles = rover_centric_angles
-    x_pixels, y_pixels = rover_coords(sand)
+
+    x_pixels, y_pixels = rover_coords(maskLeftSide(sand))
     dist, angles = to_polar_coords(x_pixels, y_pixels)
     Rover.nav_dists = dist
     Rover.nav_angles = angles
  
-    
     
     return Rover
