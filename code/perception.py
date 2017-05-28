@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 
-from threshold_functions import ball_threshold, rock_threshold, sand_threshold
+from threshold_functions import *
 
 
 # Define a function to convert to rover-centric coordinates
@@ -65,21 +65,13 @@ def pix_to_world(xpix, ypix, xpos, ypos, yaw, pitch, roll, world_size, scale):
     # Return the result
     return x_pix_world, y_pix_world
 
-# Define a function to perform a perspective transform
-def perspect_transform(img, src, dst):
-           
-    M = cv2.getPerspectiveTransform(src, dst)
-    warped = cv2.warpPerspective(img, M, (img.shape[1], img.shape[0]))# keep same size as input image
-    
-    return warped
-
 
 def convertFindings2world(threshold, Rover):
     # 4) Convert thresholded image pixel values to rover-centric coords
     x_pixels, y_pixels = rover_coords(threshold)
     # 5) Convert rover-centric pixel values to world coords
     worldsize = 200
-    scale = 20
+    scale = 22
     x_world, y_world = pix_to_world(x_pixels, y_pixels, Rover.pos[0], Rover.pos[1], Rover.yaw,Rover.pitch, Rover.roll, worldsize, scale)
 
     return x_world, y_world
@@ -109,9 +101,10 @@ def correctForAngles(img, roll, pitch, yaw):
     return outputImage
 
 def extremeAngles(pitch, roll):
-    p_thresh = 1.05
-    r_thresh = 1.05
-    return (pitch > p_thresh and pitch < 360-p_thresh) or (roll > r_thresh and roll < 360-r_thresh)
+    p_thresh = 0.5
+    r_thresh = .75
+
+    return (pitch > p_thresh and pitch < 360-p_thresh) #or (roll > r_thresh and roll < 360-r_thresh)
 
 import numpy as np
 
@@ -125,108 +118,196 @@ def correctRotateImage(img, angle):
     # perform the actual rotation and return the image
     return cv2.warpAffine(img, M, (w, h), flags=cv2.INTER_LINEAR)
 
-def getBestContour(threshold):
-    im2,contours, hierarchy = cv2.findContours(threshold,cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    cnt = None
-    area = 0
-    for ct in contours:
-        ctArea = cv2.contourArea(ct)
-        if ctArea > area:
-            area = ctArea
-            cnt = ct
-            
-    return cnt, area
 
-def maskImg(img, mask):
-    return cv2.bitwise_and(img,img, mask=mask)
+def perception_look_for_sand(Rover, warped):
+    # 3) Apply color threshold to identify terrain
+    sand = sand_threshold(warped)
+    left_sand = maskLeftSide(sand)
+    right_sand = maskRightSide(sand)
 
-def maskLeftSide(img):
-    if len(img.shape) == 3:
-        mask = np.zeros_like(img[:,:,0])
-    else:
-        mask = np.zeros_like(img[:,:])
+    forward_sand = maskStraightAhead(sand)
+    forward_sand_left = maskStraightLeftAhead(sand)
+    forward_sand_right = maskStraightRightAhead(sand)
+    
+    upper_sand = maskUpper(sand)
+    lower_sand = maskLower(sand)
 
-    mask[:, mask.shape[1]*3/8:] = 1
-    return maskImg(img, mask)
+    sn, sandArea = getBestContour(np.copy(sand))
+    snl, sandAreaLeft = getBestContour(left_sand)
+    snr, sandAreaRight = getBestContour(right_sand)
 
-def maskStraightAhead(img):
-    if len(img.shape) == 3:
-        mask = np.zeros_like(img[:,:,0])
-    else:
-        mask = np.zeros_like(img[:,:])
+    snf, sandAreaForward = getBestContour(np.copy(forward_sand))
+    snfl, sandAreaForwardL = getBestContour(forward_sand_left)
+    snfr, sandAreaForwardR = getBestContour(forward_sand_right)
 
-    (w, h) = mask.shape
-    offset = w/10
-    mask[w/2 - offset:w - offset, h/4 : h*3/4] = 1
-    return maskImg(img, mask)
+    snup, sandAreaUpper = getBestContour(upper_sand)
+    snlow, sandAreaLower = getBestContour(lower_sand)
+    
+
+    Rover.sandArea = sandArea if sn is not None else 0
+    Rover.sandAreaLeft = sandAreaLeft if snl is not None else 0
+    Rover.sandAreaRight = sandAreaRight if snr is not None else 0
+
+    Rover.sandAreaForward = sandAreaForward if snf is not None else 0
+    Rover.sandAreaForwardL = sandAreaForwardL if snfl is not None else 0
+    Rover.sandAreaForwardR = sandAreaForwardR if snfr is not None else 0
+
+    Rover.sandAreaUpper = sandAreaUpper if snup is not None else 0
+    Rover.sandAreaLower = sandAreaLower if snlow is not None else 0
+
+
+    # 4) Update Rover.vision_image
+    rock = rock_threshold(warped)
+    sand2= inSideOfWalls(sand, rock)
+    ssand = cv2.bitwise_or(sand, sand2)
+
+    kernel = np.ones((5,5),np.uint8)
+    ssand = cv2.dilate(ssand,kernel,iterations = 1)
+    ssand = cv2.erode(ssand, kernel, iterations = 1)
+
+    Rover.vision_image[:,:, 2] = ssand
+
+
+    # 5) Convert map image pixel values to rover-centric coords
+    # 6) Convert rover-centric pixel values to world coordinates
+    sand_x_world, sand_y_world = convertFindings2world(sand, Rover)
+
+    
+    # 7) Update Rover worldmap
+    if not extremeAngles(Rover.pitch, Rover.roll):
+        Rover.worldmap[sand_y_world, sand_x_world, 2] += 1
+
+
+    # 8) Convert rover-centric pixel positions to polar coordinates
+    # Update Rover pixel distances and angles
+    x_pixels, y_pixels = rover_coords(sand)
+    dist, angles = to_polar_coords(x_pixels, y_pixels)
+    Rover.nav_dists = dist
+    Rover.nav_angles = angles
+
+
+    x_pixelsF, y_pixelsF = rover_coords(forward_sand)
+    distF, anglesF = to_polar_coords(x_pixelsF, y_pixelsF)
+    Rover.nav_distsF = distF
+    Rover.nav_anglesF = anglesF
+
+    
+
+
+def perception_look_for_rocks(Rover, warped):
+    # 3) Apply color threshold to identify walls and rocks
+    rock = rock_threshold(warped, Rover.coneMask)
+    left_rock = maskLeftSide(rock)
+    right_rock = maskRightSide(rock)
+
+    forward_left_rock = maskStraightLeftAhead(rock)
+    forward_right_rock = maskStraightRightAhead(rock)
+    
+    upper_rock = maskUpper(rock)
+    lower_rock = maskLower(rock)
+
+    rn, rockArea = getBestContour(np.copy(rock))
+    rnl, rockAreaLeft = getBestContour(left_rock)
+    rnr, rockAreaRight = getBestContour(right_rock)
+
+    rnfl, rockAreaForwardLeft = getBestContour(forward_left_rock)
+    rnfr, rockAreaForwardRight = getBestContour(forward_right_rock)
+    
+    rnup, rockAreaUpper = getBestContour(upper_rock)
+    rnlow, rockAreaLower = getBestContour(lower_rock)
+
+    Rover.rockArea = rockArea if rn is not None else 0
+    Rover.rockAreaLeft = rockAreaLeft if rnl is not None else 0
+    Rover.rockAreaRight = rockAreaRight if rnr is not None else 0
+
+    Rover.rockAreaForwardLeft = rockAreaForwardLeft if rnfl is not None else 0
+    Rover.rockAreaForwardRight = rockAreaForwardRight if rnfr is not None else 0
+    
+    Rover.rockAreaUpper = rockAreaUpper
+    Rover.rockAreaLower = rockAreaLower
+
+    Rover.rockAreaForward = Rover.rockAreaForwardLeft + Rover.rockAreaForwardRight
+    # 4) Update Rover.vision_image
+    rock = reducedWalls(rock)
+    Rover.vision_image[:,:, 0] = rock
+
+    # 5) Convert map image pixel values to rover-centric coords
+    # 6) Convert rover-centric pixel values to world coordinates
+    rock_x_world, rock_y_world = convertFindings2world(rock, Rover)
+    
+    # 7) Update Rover worldmap
+    if not extremeAngles(Rover.pitch, Rover.roll):
+        Rover.worldmap[rock_y_world, rock_x_world, 0] += 1
+
+
+def perception_look_for_balls(Rover, warped):
+    
+    ball = ball_threshold(warped)
+    ball2 = ball_threshold(Rover.img)
+    bn, ballArea = getBestContour(np.copy(ball))
+    Rover.ballArea = ballArea if bn is not None else 0
+    Rover.seeTheBall = True if bn is not None else False
+
+    # if not Rover.picking_up and ballArea >= 5:
+    #     M = cv2.moments(bn)
+    #     cx = M['m10']/M['m00']
+    #     cy = M['m01']/M['m00']
+    #     #worldsize = 200
+    #     #scale = 20
+    #     #cx, cy = pix_to_world(np.array([cx]), np.array([cy]), Rover.pos[0], Rover.pos[1], Rover.yaw,Rover.pitch, Rover.roll, worldsize, scale)
+    #     w = warped.shape[0]
+    #     Rover.turnAngle = 50*(cx/w - 1/2)
+    #     if cx < warped.shape[0] * 4/10:
+    #         Rover.ball_location = "turn left"
+    #     elif cx > warped.shape[0] * 6 / 10:
+    #         Rover.ball_location = "turn right"
+    #     else:
+    #         Rover.ball_location = "go straight"
+
+    #     Rover.seeTheBall = True
+
+    #     Rover.mode = "move to ball"
+    #     print("#####I see the ball, {}".format(Rover.ball_location))
+    # elif ballArea < 5 and Rover.mode == 'move to ball':
+    #     Rover.mode = 'stop'
+
+    
+    # 4) Update Rover.vision_image
+    Rover.vision_image[:,:, 1] = ball
+    
+    # 5) Convert map image pixel values to rover-centric coords
+    # 6) Convert rover-centric pixel values to world coordinates
+    ball_x_world, ball_y_world = convertFindings2world(ball, Rover)
+    
+    # 7) Update Rover worldmap
+    if not extremeAngles(Rover.pitch, Rover.roll):
+        Rover.worldmap[ball_y_world, ball_x_world, 1] += 1
+
+    x_pixels, y_pixels = rover_coords(ball)
+    ball_dists, ball_angles = to_polar_coords(x_pixels, y_pixels)
+    Rover.ball_dists = ball_dists
+    Rover.ball_angles = ball_angles
+
+
+def blurImg(img):
+    blur = cv2.blur(img,(3,3))
+    #blur = cv2.GaussianBlur(img,(11,11),0)
+    return blur
 
 # Apply the above functions in succession and update the Rover state accordingly
 def perception_step(Rover):
     # Perform perception steps to update Rover()
-    # TODO: 
     # NOTE: camera image is coming to you in Rover.img
-    # 1) Define source and destination points for perspective transform
-    image = Rover.img
-    dst_size = 10
-    bottom_offset = 7
-    source = np.float32([[14, 140], [301 ,140],[200, 96], [118, 96]])
-    destination = np.float32([
-                  [image.shape[1]/2 - dst_size, image.shape[0] - bottom_offset],
-                  [image.shape[1]/2 + dst_size, image.shape[0] - bottom_offset],
-                  [image.shape[1]/2 + dst_size, image.shape[0] - 2*dst_size - bottom_offset], 
-                  [image.shape[1]/2 - dst_size, image.shape[0] - 2*dst_size - bottom_offset],
-                  ])
-    # 2) Apply perspective transform
-    img = Rover.img
-    correctionAngle = Rover.roll-360 if Rover.roll > 180 else -Rover.roll
-    img = correctRotateImage(img, correctionAngle)#correctForAngles(Rover.img, 0, 0, 0)
-    warped = perspect_transform(img, source, destination)
-    # 3) Apply color threshold to identify navigable terrain/obstacles/rock samples
-    sand = sand_threshold(warped)
-    rock = rock_threshold(warped)
-    ball = ball_threshold(warped)
     
-    sn, sandArea = getBestContour(np.copy(sand))
-    rn, rockArea = getBestContour(np.copy(rock))
-    bn, ballArea = getBestContour(np.copy(ball))
-    if sn is not None:
-        Rover.sandArea = sandArea
-    if rn is not None:
-        Rover.rockArea = rockArea
-    if bn is not None:
-        Rover.ballArea = ballArea
+    img = blurImg(Rover.img)
+    #correctionAngle = Rover.roll-360 if Rover.roll > 180 else -Rover.roll
+    correctionAngle = Rover.roll
+    Rover.img = img = correctRotateImage(img, correctionAngle)
+    warped = perspect_transform(img)
 
-    # 4) Update Rover.vision_image (this will be displayed on left side of screen)
-    Rover.vision_image[:,:, 0] = rock
-    Rover.vision_image[:,:, 1] = ball
-    Rover.vision_image[:,:, 2] = sand
-        # Example: Rover.vision_image[:,:,0] = obstacle color-thresholded binary image
-        #          Rover.vision_image[:,:,1] = rock_sample color-thresholded binary image
-        #          Rover.vision_image[:,:,2] = navigable terrain color-thresholded binary image
 
-    # 5) Convert map image pixel values to rover-centric coords
-    # 6) Convert rover-centric pixel values to world coordinates
-
-    sand_x_world, sand_y_world = convertFindings2world(sand, Rover)
-    rock_x_world, rock_y_world = convertFindings2world(rock, Rover)
-    ball_x_world, ball_y_world = convertFindings2world(ball, Rover)
-    # 7) Update Rover worldmap (to be displayed on right side of screen)
-        # Example: Rover.worldmap[obstacle_y_world, obstacle_x_world, 0] += 1
-        #          Rover.worldmap[rock_y_world, roc0k_x_world, 1] += 1
-        #          Rover.worldmap[navigable_y_world, navigable_x_world, 2] += 1
-    if not extremeAngles(Rover.pitch, Rover.roll):
-        Rover.worldmap[rock_y_world, rock_x_world, 0] += 1
-        Rover.worldmap[ball_y_world, ball_x_world, 1] += 1
-        Rover.worldmap[sand_y_world, sand_x_world, 2] += 1
-    # 8) Convert rover-centric pixel positions to polar coordinates
-    # Update Rover pixel distances and angles
-        # Rover.nav_dists = rover_centric_pixel_distances
-        # Rover.nav_angles = rover_centric_angles
-
-    x_pixels, y_pixels = rover_coords(maskLeftSide(sand))
-    dist, angles = to_polar_coords(x_pixels, y_pixels)
-    Rover.nav_dists = dist
-    Rover.nav_angles = angles
- 
-    
+    perception_look_for_sand(Rover, warped)
+    perception_look_for_rocks(Rover, warped)
+    perception_look_for_balls(Rover, warped)
+    Rover.wasExtreme = extremeAngles(Rover.pitch, Rover.roll)
     return Rover

@@ -77,15 +77,62 @@ class RoverState():
         self.send_pickup = False # Set to True to trigger rock pickup
 
         self.sandArea = 0
-        self.minOpenArea = 3000
-        self.maxRockArea = 1000
+        self.sandAreaForward = 0
+        self.sandAreaForwardL = 0
+        self.sandAreaForwardR = 0
+        self.sandAreaLeft = 0
+        self.sandAreaRight = 0
+        self.sandAreaUpper = 0
+        self.sandAreaBottom = 0
+
+        self.minOpenArea = 2850
+        self.maxRockArea = 2800
+        self.minOpenAreaLR = 2000
+        self.minOpenAreaF = 2500
+
         self.rockArea = 0
+        self.rockAreaForward = 0
+        self.rockAreaForwardRight = 0
+        self.rockAreaForwardLeft = 0
+        self.rockAreaLeft = 0
+        self.rockAreaRight = 0
+        self.rockAreaUpper = 0
+        self.rockAreaBottom = 0
+
+        self.minWallAreaLR = 3500
+        self.minWallAreaF = 7500
+        self.wasExtreme = False
+        self.nav_distsL = None
+        self.nav_anglesL = None
+        self.nav_distsR = None
+        self.nav_anglesR = None
+        
+        self.nav_distsF = None
+        self.nav_anglesF = None
+        
         self.inCorner = False
-        self.seeTheBall = False;
+        self.seeTheBall = False
+        self.ball_location = None
+        self.turnAngle = None
         self.angleInCorner=0
+        self.coneMask=None
+        self.turnLeft = 10
+        self.turnRight = -10
+
+
+        self.ball_dists = None
+        self.ball_angles = None
+        self.time = 0
+        self.near_sample_time = 0
+        self.timeout_after_pickup = 200
+        self.sameStateCount = 0
 # Initialize our rover 
 Rover = RoverState()
 
+mask = np.ones((160, 320), dtype=np.uint8)
+from threshold_functions import perspect_transform
+mask = perspect_transform(mask)
+Rover.coneMask = mask
 
 # Variables to track frames per second (FPS)
 # Intitialize frame counter
@@ -118,7 +165,7 @@ def telemetry(sid, data):
             # Execute the perception and decision steps to update the Rover's state
             Rover = perception_step(Rover)
             Rover = decision_step(Rover)
-
+            Rover.time += 1
             # Create output images to send to server
             out_image_string1, out_image_string2 = create_output_images(Rover)
 
