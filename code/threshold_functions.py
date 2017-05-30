@@ -150,13 +150,54 @@ def reducedWalls(rock):
     
     kernel = np.ones((5,5),np.uint8)
     
-    rock = cv2.dilate(rock,kernel,iterations = 2)
-    notRock = cv2.dilate(notRock,kernel,iterations = 2)
+    rock = cv2.dilate(rock,kernel,iterations = 1)
+    notRock = cv2.dilate(notRock,kernel,iterations = 1)
     rock = maskROI(rock)
     notRock = maskROI(notRock)
     
     rock = cv2.bitwise_and(rock, notRock)
-    return cv2.erode(rock, kernel, iterations = 1)
+    return rock
+    #return cv2.erode(rock, kernel, iterations = 1)
+
+def reducedWalls2(rock, sand):
+    
+    
+    notRock = np.zeros_like(rock)
+    cv2.bitwise_not(rock, notRock)
+    notRock = maskROI(notRock)
+    
+    notSand = np.zeros_like(sand)
+    cv2.bitwise_not(rock, notSand)
+    notSand = maskROI(notSand)
+    
+    
+    kernel = np.ones((3,3),np.uint8)
+    
+    
+    rock = cv2.dilate(rock,kernel,iterations = 1)
+    notRock = cv2.dilate(notRock,kernel,iterations = 1)
+    sand = cv2.dilate(sand, kernel, iterations = 2)
+    notSand = cv2.dilate(notSand, kernel, iterations = 2)
+    
+    
+    rock = maskROI(rock)
+    notRock = maskROI(notRock)
+    sand = maskROI(sand)
+    notSand = maskROI(notSand)
+    
+    
+    
+    rockWall = cv2.bitwise_and(rock, notRock)
+    sandWall = cv2.bitwise_and(sand, notSand)
+    
+    rockWall = maskROI(cv2.dilate(rockWall, kernel, iterations = 2))
+    sandWall = maskROI(cv2.dilate(sandWall, kernel, iterations = 2))
+    
+    wall = cv2.bitwise_and(rockWall, sandWall)
+    wall = cv2.erode(wall, kernel, iterations = 1)
+    
+    return maskROI(wall)
+
 
 def inSideOfWalls(warped, rock):
     walls = reducedWalls(warped)
@@ -340,3 +381,15 @@ def maskLower(img):
     mask[:,int(w*6/10):] = 0
     mask[:int(h*5/10), int(w*4/10) : int(w*6/10)] = 0
     return maskImg(img, mask)
+
+
+def maskReduceMap(img):
+    if len(img.shape) == 3:
+        mask = np.ones_like(img[:,:,0])
+    else:
+        mask = np.ones_like(img[:,:])
+
+    (h,w) = mask.shape
+    mask[:, : int(w*25/100)] = 0
+    mask[: int(h*20/100), :] = 0
+    return maskImg(img, mask)    

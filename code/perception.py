@@ -48,7 +48,10 @@ def correct4Roll(xpix, ypix, roll):
 
 def correct4Pitch(xpix, ypix, pitch):
     pitch_rad = pitch * np.pi / 180.0
-    return xpix, np.cos(pitch_rad)*ypix
+
+    if pitch > 0:
+        return xpix, np.cos(pitch_rad)*ypix
+    return xpix, ypix
 
 # Define a function to apply rotation and translation (and clipping)
 # Once you define the two functions above this function should work
@@ -101,10 +104,10 @@ def correctForAngles(img, roll, pitch, yaw):
     return outputImage
 
 def extremeAngles(pitch, roll):
-    p_thresh = 0.5
-    r_thresh = .75
+    p_thresh = 0.75
+    r_thresh = 1.1
 
-    return (pitch > p_thresh and pitch < 360-p_thresh) #or (roll > r_thresh and roll < 360-r_thresh)
+    return (pitch > p_thresh and pitch < 360-p_thresh) or (roll > r_thresh and roll < 360-r_thresh)
 
 import numpy as np
 
@@ -118,7 +121,28 @@ def correctRotateImage(img, angle):
     # perform the actual rotation and return the image
     return cv2.warpAffine(img, M, (w, h), flags=cv2.INTER_LINEAR)
 
+def fillMapHoles(Rover):
+    worldmap = np.copy(Rover.worldmap[:,:, 2]).astype(np.uint8)
+    
+    mask = cv2.bitwise_not(np.copy(Rover.hiddenRockMap).astype(np.uint8))
+    worldmap = maskImg(worldmap, mask)
 
+
+    im2, contours, hierarchy = cv2.findContours(worldmap, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)    
+    img = np.zeros_like(worldmap)
+    cv2.fillPoly(img, contours , 1)
+    
+    kernel = np.ones((5,5), np.uint8)
+    cv2.erode(img, kernel, iterations = 1)
+    cv2.dilate(img, kernel, iterations = 1)
+
+    ypos, xpos = img.nonzero()
+    Rover.worldmap[ypos, xpos, 2] += 1
+
+
+
+    
+    
 def perception_look_for_sand(Rover, warped):
     # 3) Apply color threshold to identify terrain
     sand = sand_threshold(warped)
@@ -158,12 +182,21 @@ def perception_look_for_sand(Rover, warped):
 
     # 4) Update Rover.vision_image
     rock = rock_threshold(warped)
-    sand2= inSideOfWalls(sand, rock)
-    ssand = cv2.bitwise_or(sand, sand2)
+    sand2 = inSideOfWalls(sand, rock)
 
     kernel = np.ones((5,5),np.uint8)
-    ssand = cv2.dilate(ssand,kernel,iterations = 1)
+    #sand = cv2.erode(sand, kernel, iterations = 1)
+    sand = cv2.dilate(sand, kernel,iterations = 1)
+    
+    #sand2 = cv2.erode(sand2, kernel, iterations = 1)
+    #sand2 = cv2.dilate(sand2,kernel,iterations = 1)
+
+    ssand = cv2.bitwise_and(sand, sand2)
+    
+    
     ssand = cv2.erode(ssand, kernel, iterations = 1)
+    #ssand = cv2.dilate(ssand, kernel,iterations = 1)
+    ssand = maskReduceMap(ssand)
 
     Rover.vision_image[:,:, 2] = ssand
 
@@ -176,7 +209,6 @@ def perception_look_for_sand(Rover, warped):
     # 7) Update Rover worldmap
     if not extremeAngles(Rover.pitch, Rover.roll):
         Rover.worldmap[sand_y_world, sand_x_world, 2] += 1
-
 
     # 8) Convert rover-centric pixel positions to polar coordinates
     # Update Rover pixel distances and angles
@@ -228,17 +260,23 @@ def perception_look_for_rocks(Rover, warped):
 
     Rover.rockAreaForward = Rover.rockAreaForwardLeft + Rover.rockAreaForwardRight
     # 4) Update Rover.vision_image
-    rock = reducedWalls(rock)
-    Rover.vision_image[:,:, 0] = rock
+    sand = sand_threshold(warped)
+    reduecdRock = reducedWalls2(rock, sand)
+
+    reduecdRock = maskReduceMap(reduecdRock)
+    rock = maskReduceMap(rock)
+
+    Rover.vision_image[:,:, 0] = reduecdRock
 
     # 5) Convert map image pixel values to rover-centric coords
     # 6) Convert rover-centric pixel values to world coordinates
+    reduecdRock_x_world, reduecdRock_y_world = convertFindings2world(reduecdRock, Rover)
     rock_x_world, rock_y_world = convertFindings2world(rock, Rover)
     
     # 7) Update Rover worldmap
     if not extremeAngles(Rover.pitch, Rover.roll):
-        Rover.worldmap[rock_y_world, rock_x_world, 0] += 1
-
+        Rover.worldmap[reduecdRock_y_world, reduecdRock_x_world, 0] += 2
+        Rover.hiddenRockMap[rock_y_world, rock_x_world] += 1
 
 def perception_look_for_balls(Rover, warped):
     
@@ -248,30 +286,6 @@ def perception_look_for_balls(Rover, warped):
     Rover.ballArea = ballArea if bn is not None else 0
     Rover.seeTheBall = True if bn is not None else False
 
-    # if not Rover.picking_up and ballArea >= 5:
-    #     M = cv2.moments(bn)
-    #     cx = M['m10']/M['m00']
-    #     cy = M['m01']/M['m00']
-    #     #worldsize = 200
-    #     #scale = 20
-    #     #cx, cy = pix_to_world(np.array([cx]), np.array([cy]), Rover.pos[0], Rover.pos[1], Rover.yaw,Rover.pitch, Rover.roll, worldsize, scale)
-    #     w = warped.shape[0]
-    #     Rover.turnAngle = 50*(cx/w - 1/2)
-    #     if cx < warped.shape[0] * 4/10:
-    #         Rover.ball_location = "turn left"
-    #     elif cx > warped.shape[0] * 6 / 10:
-    #         Rover.ball_location = "turn right"
-    #     else:
-    #         Rover.ball_location = "go straight"
-
-    #     Rover.seeTheBall = True
-
-    #     Rover.mode = "move to ball"
-    #     print("#####I see the ball, {}".format(Rover.ball_location))
-    # elif ballArea < 5 and Rover.mode == 'move to ball':
-    #     Rover.mode = 'stop'
-
-    
     # 4) Update Rover.vision_image
     Rover.vision_image[:,:, 1] = ball
     
@@ -290,7 +304,7 @@ def perception_look_for_balls(Rover, warped):
 
 
 def blurImg(img):
-    blur = cv2.blur(img,(3,3))
+    blur = cv2.blur(img,(5,5))
     #blur = cv2.GaussianBlur(img,(11,11),0)
     return blur
 
@@ -299,7 +313,10 @@ def perception_step(Rover):
     # Perform perception steps to update Rover()
     # NOTE: camera image is coming to you in Rover.img
     
+    #Rover.img = blurImg(Rover.img)
     img = blurImg(Rover.img)
+    img = Rover.img
+
     #correctionAngle = Rover.roll-360 if Rover.roll > 180 else -Rover.roll
     correctionAngle = Rover.roll
     Rover.img = img = correctRotateImage(img, correctionAngle)
@@ -309,5 +326,7 @@ def perception_step(Rover):
     perception_look_for_sand(Rover, warped)
     perception_look_for_rocks(Rover, warped)
     perception_look_for_balls(Rover, warped)
+    fillMapHoles(Rover)
+
     Rover.wasExtreme = extremeAngles(Rover.pitch, Rover.roll)
     return Rover

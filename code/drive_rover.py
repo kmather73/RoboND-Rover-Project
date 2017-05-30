@@ -16,6 +16,7 @@ import json
 import pickle
 import matplotlib.image as mpimg
 import time
+import eventlet
 
 # Import functions for perception and decision making
 from perception import perception_step
@@ -70,6 +71,8 @@ class RoverState():
         # Update this image with the positions of navigable terrain
         # obstacles and rock samples
         self.worldmap = np.zeros((200, 200, 3), dtype=np.float) 
+        self.hiddenRockMap = np.zeros((200, 200), dtype=np.float)
+
         self.samples_pos = None # To store the actual sample positions
         self.samples_found = 0 # To count the number of samples found
         self.near_sample = 0 # Will be set to telemetry value data["near_sample"]
@@ -85,10 +88,10 @@ class RoverState():
         self.sandAreaUpper = 0
         self.sandAreaBottom = 0
 
-        self.minOpenArea = 2850
+        self.minOpenArea = 2000
         self.maxRockArea = 2800
         self.minOpenAreaLR = 2000
-        self.minOpenAreaF = 2500
+        self.minOpenAreaF = 2000
 
         self.rockArea = 0
         self.rockAreaForward = 0
@@ -99,7 +102,7 @@ class RoverState():
         self.rockAreaUpper = 0
         self.rockAreaBottom = 0
 
-        self.minWallAreaLR = 3500
+        self.minWallAreaLR = 2800
         self.minWallAreaF = 7500
         self.wasExtreme = False
         self.nav_distsL = None
@@ -126,6 +129,17 @@ class RoverState():
         self.near_sample_time = 0
         self.timeout_after_pickup = 200
         self.sameStateCount = 0
+        self.PreviousMode = ""
+        self.sameState = 0
+        self.prevLocation = (0,0)
+        self.prevLocationValid = False
+        self.preListSum = 0.0
+        self.preN = 1
+
+def roverDist(Rover):
+    return np.sqrt((Rover.pos[0]-Rover.prevLocation[0])**2 + (Rover.pos[1]-Rover.prevLocation[1])**2) 
+
+
 # Initialize our rover 
 Rover = RoverState()
 
@@ -166,6 +180,17 @@ def telemetry(sid, data):
             Rover = perception_step(Rover)
             Rover = decision_step(Rover)
             Rover.time += 1
+            if Rover.time % 200 == 0:
+                Rover.prevLocation = Rover.pos
+                Rover.prevLocationValid = False
+                Rover.prevListSum = Rover.preListSum / 20
+                Rover.preN = Rover.preN / 20
+            else:
+                Rover.preListSum += roverDist(Rover)
+                Rover.preN += 1
+                Rover.prevLocationValid = True
+
+
             # Create output images to send to server
             out_image_string1, out_image_string2 = create_output_images(Rover)
 
@@ -174,7 +199,7 @@ def telemetry(sid, data):
             send_control(commands, out_image_string1, out_image_string2)
  
             # If in a state where want to pickup a rock send pickup command
-            if Rover.send_pickup:
+            if Rover.send_pickup and not Rover.picking_up:
                 send_pickup()
                 # Reset Rover flags
                 Rover.send_pickup = False
@@ -219,6 +244,7 @@ def send_control(commands, image_string1, image_string2):
         "data",
         data,
         skip_sid=True)
+    eventlet.sleep(0)
 
 # Define a function to send the "pickup" command 
 def send_pickup():
@@ -228,6 +254,7 @@ def send_pickup():
         "pickup",
         pickup,
         skip_sid=True)
+    eventlet.sleep(0)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Remote Driving')
@@ -240,7 +267,7 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
     
-    os.system('rm -rf IMG_stream/*')
+    #os.system('rm -rf IMG_stream/*')
     if args.image_folder != '':
         print("Creating image folder at {}".format(args.image_folder))
         if not os.path.exists(args.image_folder):

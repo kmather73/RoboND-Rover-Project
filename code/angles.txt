@@ -1,0 +1,500 @@
+	elif Rover.sandAreaForwardR > 3000:
+		angle = -5.0
+	elif Rover.sandAreaForwardR > 2990:
+		angle = -4.958
+	elif Rover.sandAreaForwardR > 2980:
+		angle = -4.916
+	elif Rover.sandAreaForwardR > 2970:
+		angle = -4.874
+	elif Rover.sandAreaForwardR > 2960:
+		angle = -4.832
+	elif Rover.sandAreaForwardR > 2950:
+		angle = -4.79
+	elif Rover.sandAreaForwardR > 2940:
+		angle = -4.748
+	elif Rover.sandAreaForwardR > 2930:
+		angle = -4.7059999999999995
+	elif Rover.sandAreaForwardR > 2920:
+		angle = -4.664
+	elif Rover.sandAreaForwardR > 2910:
+		angle = -4.622
+	elif Rover.sandAreaForwardR > 2900:
+		angle = -4.58
+	elif Rover.sandAreaForwardR > 2890:
+		angle = -4.538
+	elif Rover.sandAreaForwardR > 2880:
+		angle = -4.496
+	elif Rover.sandAreaForwardR > 2870:
+		angle = -4.454
+	elif Rover.sandAreaForwardR > 2860:
+		angle = -4.412
+	elif Rover.sandAreaForwardR > 2850:
+		angle = -4.37
+	elif Rover.sandAreaForwardR > 2840:
+		angle = -4.328
+	elif Rover.sandAreaForwardR > 2830:
+		angle = -4.286
+	elif Rover.sandAreaForwardR > 2820:
+		angle = -4.244
+	elif Rover.sandAreaForwardR > 2810:
+		angle = -4.202
+	elif Rover.sandAreaForwardR > 2800:
+		angle = -4.16
+	elif Rover.sandAreaForwardR > 2790:
+		angle = -4.118
+	elif Rover.sandAreaForwardR > 2780:
+		angle = -4.076
+	elif Rover.sandAreaForwardR > 2770:
+		angle = -4.034
+	elif Rover.sandAreaForwardR > 2760:
+		angle = -3.992
+	elif Rover.sandAreaForwardR > 2750:
+		angle = -3.95
+	elif Rover.sandAreaForwardR > 2740:
+		angle = -3.908
+	elif Rover.sandAreaForwardR > 2730:
+		angle = -3.8659999999999997
+	elif Rover.sandAreaForwardR > 2720:
+		angle = -3.824
+	elif Rover.sandAreaForwardR > 2710:
+		angle = -3.782
+	elif Rover.sandAreaForwardR > 2700:
+		angle = -3.74
+	elif Rover.sandAreaForwardR > 2690:
+		angle = -3.698
+	elif Rover.sandAreaForwardR > 2680:
+		angle = -3.6559999999999997
+	elif Rover.sandAreaForwardR > 2670:
+		angle = -3.614
+	elif Rover.sandAreaForwardR > 2660:
+		angle = -3.572
+	elif Rover.sandAreaForwardR > 2650:
+		angle = -3.53
+	elif Rover.sandAreaForwardR > 2640:
+		angle = -3.488
+	elif Rover.sandAreaForwardR > 2630:
+		angle = -3.4459999999999997
+	elif Rover.sandAreaForwardR > 2620:
+		angle = -3.404
+	elif Rover.sandAreaForwardR > 2610:
+		angle = -3.362
+	elif Rover.sandAreaForwardR > 2600:
+		angle = -3.32
+	elif Rover.sandAreaForwardR > 2590:
+		angle = -3.2779999999999996
+	elif Rover.sandAreaForwardR > 2580:
+		angle = -3.2359999999999998
+	elif Rover.sandAreaForwardR > 2570:
+		angle = -3.194
+	elif Rover.sandAreaForwardR > 2560:
+		angle = -3.152
+	elif Rover.sandAreaForwardR > 2550:
+		angle = -3.11
+	elif Rover.sandAreaForwardR > 2540:
+		angle = -3.0679999999999996
+	elif Rover.sandAreaForwardR > 2530:
+		angle = -3.026
+	elif Rover.sandAreaForwardR > 2520:
+		angle = -2.984
+	elif Rover.sandAreaForwardR > 2510:
+		angle = -2.9419999999999997
+	elif Rover.sandAreaForwardR > 2500:
+		angle = -2.9
+	elif Rover.sandAreaForwardR > 2490:
+		angle = -2.8579999999999997
+	elif Rover.sandAreaForwardR > 2480:
+		angle = -2.816
+	elif Rover.sandAreaForwardR > 2470:
+		angle = -2.774
+	elif Rover.sandAreaForwardR > 2460:
+		angle = -2.7319999999999998
+	elif Rover.sandAreaForwardR > 2450:
+		angle = -2.69
+	elif Rover.sandAreaForwardR > 2440:
+		angle = -2.6479999999999997
+	elif Rover.sandAreaForwardR > 2430:
+		angle = -2.606
+	elif Rover.sandAreaForwardR > 2420:
+		angle = -2.564
+	elif Rover.sandAreaForwardR > 2410:
+		angle = -2.522
+	elif Rover.sandAreaForwardR > 2400:
+		angle = -2.48
+	elif Rover.sandAreaForwardR > 2390:
+		angle = -2.4379999999999997
+	elif Rover.sandAreaForwardR > 2380:
+		angle = -2.396
+	elif Rover.sandAreaForwardR > 2370:
+		angle = -2.3539999999999996
+	elif Rover.sandAreaForwardR > 2360:
+		angle = -2.312
+	elif Rover.sandAreaForwardR > 2350:
+		angle = -2.27
+	elif Rover.sandAreaForwardR > 2340:
+		angle = -2.2279999999999998
+	elif Rover.sandAreaForwardR > 2330:
+		angle = -2.186
+	elif Rover.sandAreaForwardR > 2320:
+		angle = -2.1439999999999997
+	elif Rover.sandAreaForwardR > 2310:
+		angle = -2.102
+	elif Rover.sandAreaForwardR > 2300:
+		angle = -2.0599999999999996
+	elif Rover.sandAreaForwardR > 2290:
+		angle = -2.018
+	elif Rover.sandAreaForwardR > 2280:
+		angle = -1.976
+	elif Rover.sandAreaForwardR > 2270:
+		angle = -1.9339999999999997
+	elif Rover.sandAreaForwardR > 2260:
+		angle = -1.892
+	elif Rover.sandAreaForwardR > 2250:
+		angle = -1.8499999999999996
+	elif Rover.sandAreaForwardR > 2240:
+		angle = -1.8079999999999998
+	elif Rover.sandAreaForwardR > 2230:
+		angle = -1.766
+	elif Rover.sandAreaForwardR > 2220:
+		angle = -1.7239999999999998
+	elif Rover.sandAreaForwardR > 2210:
+		angle = -1.682
+	elif Rover.sandAreaForwardR > 2200:
+		angle = -1.6399999999999997
+	elif Rover.sandAreaForwardR > 2190:
+		angle = -1.5979999999999999
+	elif Rover.sandAreaForwardR > 2180:
+		angle = -1.5559999999999996
+	elif Rover.sandAreaForwardR > 2170:
+		angle = -1.5139999999999998
+	elif Rover.sandAreaForwardR > 2160:
+		angle = -1.472
+	elif Rover.sandAreaForwardR > 2150:
+		angle = -1.4299999999999997
+	elif Rover.sandAreaForwardR > 2140:
+		angle = -1.388
+	elif Rover.sandAreaForwardR > 2130:
+		angle = -1.3459999999999996
+	elif Rover.sandAreaForwardR > 2120:
+		angle = -1.3039999999999998
+	elif Rover.sandAreaForwardR > 2110:
+		angle = -1.2619999999999996
+	elif Rover.sandAreaForwardR > 2100:
+		angle = -1.2199999999999998
+	elif Rover.sandAreaForwardR > 2090:
+		angle = -1.178
+	elif Rover.sandAreaForwardR > 2080:
+		angle = -1.1359999999999997
+	elif Rover.sandAreaForwardR > 2070:
+		angle = -1.0939999999999999
+	elif Rover.sandAreaForwardR > 2060:
+		angle = -1.0519999999999996
+	elif Rover.sandAreaForwardR > 2050:
+		angle = -1.0099999999999998
+	elif Rover.sandAreaForwardR > 2040:
+		angle = -0.968
+	elif Rover.sandAreaForwardR > 2030:
+		angle = -0.9260000000000002
+	elif Rover.sandAreaForwardR > 2020:
+		angle = -0.8839999999999995
+	elif Rover.sandAreaForwardR > 2010:
+		angle = -0.8419999999999996
+	elif Rover.sandAreaForwardR > 2000:
+		angle = -0.7999999999999998
+	elif Rover.sandAreaForwardR > 1990:
+		angle = -0.758
+	elif Rover.sandAreaForwardR > 1980:
+		angle = -0.7159999999999993
+	elif Rover.sandAreaForwardR > 1970:
+		angle = -0.6739999999999995
+	elif Rover.sandAreaForwardR > 1960:
+		angle = -0.6319999999999997
+	elif Rover.sandAreaForwardR > 1950:
+		angle = -0.5899999999999999
+	elif Rover.sandAreaForwardR > 1940:
+		angle = -0.548
+	elif Rover.sandAreaForwardR > 1930:
+		angle = -0.5059999999999993
+	elif Rover.sandAreaForwardR > 1920:
+		angle = -0.4639999999999995
+	elif Rover.sandAreaForwardR > 1910:
+		angle = -0.4219999999999997
+	elif Rover.sandAreaForwardR > 1900:
+		angle = -0.3799999999999999
+	elif Rover.sandAreaForwardR > 1890:
+		angle = -0.3380000000000001
+	elif Rover.sandAreaForwardR > 1880:
+		angle = -0.2959999999999994
+	elif Rover.sandAreaForwardR > 1870:
+		angle = -0.25399999999999956
+	elif Rover.sandAreaForwardR > 1860:
+		angle = -0.21199999999999974
+	elif Rover.sandAreaForwardR > 1850:
+		angle = -0.16999999999999993
+	elif Rover.sandAreaForwardR > 1840:
+		angle = -0.1280000000000001
+	elif Rover.sandAreaForwardR > 1830:
+		angle = -0.08599999999999941
+	elif Rover.sandAreaForwardR > 1820:
+		angle = -0.043999999999999595
+	elif Rover.sandAreaForwardR > 1810:
+		angle = -0.0019999999999997797
+	elif Rover.sandAreaForwardR > 1800:
+		angle = 0.040000000000000036
+	elif Rover.sandAreaForwardR > 1790:
+		angle = 0.08200000000000074
+	elif Rover.sandAreaForwardR > 1780:
+		angle = 0.12400000000000055
+	elif Rover.sandAreaForwardR > 1770:
+		angle = 0.16600000000000037
+	elif Rover.sandAreaForwardR > 1760:
+		angle = 0.20800000000000018
+	elif Rover.sandAreaForwardR > 1750:
+		angle = 0.25
+	elif Rover.sandAreaForwardR > 1740:
+		angle = 0.2920000000000007
+	elif Rover.sandAreaForwardR > 1730:
+		angle = 0.3340000000000005
+	elif Rover.sandAreaForwardR > 1720:
+		angle = 0.37600000000000033
+	elif Rover.sandAreaForwardR > 1710:
+		angle = 0.41800000000000015
+	elif Rover.sandAreaForwardR > 1700:
+		angle = 0.45999999999999996
+	elif Rover.sandAreaForwardR > 1690:
+		angle = 0.5020000000000007
+	elif Rover.sandAreaForwardR > 1680:
+		angle = 0.5440000000000005
+	elif Rover.sandAreaForwardR > 1670:
+		angle = 0.5860000000000003
+	elif Rover.sandAreaForwardR > 1660:
+		angle = 0.6280000000000001
+	elif Rover.sandAreaForwardR > 1650:
+		angle = 0.6699999999999999
+	elif Rover.sandAreaForwardR > 1640:
+		angle = 0.7120000000000006
+	elif Rover.sandAreaForwardR > 1630:
+		angle = 0.7540000000000004
+	elif Rover.sandAreaForwardR > 1620:
+		angle = 0.7960000000000003
+	elif Rover.sandAreaForwardR > 1610:
+		angle = 0.8380000000000001
+	elif Rover.sandAreaForwardR > 1600:
+		angle = 0.8800000000000008
+	elif Rover.sandAreaForwardR > 1590:
+		angle = 0.9220000000000006
+	elif Rover.sandAreaForwardR > 1580:
+		angle = 0.9640000000000004
+	elif Rover.sandAreaForwardR > 1570:
+		angle = 1.0060000000000002
+	elif Rover.sandAreaForwardR > 1560:
+		angle = 1.048
+	elif Rover.sandAreaForwardR > 1550:
+		angle = 1.0900000000000007
+	elif Rover.sandAreaForwardR > 1540:
+		angle = 1.1320000000000006
+	elif Rover.sandAreaForwardR > 1530:
+		angle = 1.1740000000000004
+	elif Rover.sandAreaForwardR > 1520:
+		angle = 1.2160000000000002
+	elif Rover.sandAreaForwardR > 1510:
+		angle = 1.258
+	elif Rover.sandAreaForwardR > 1500:
+		angle = 1.3000000000000007
+	elif Rover.sandAreaForwardR > 1490:
+		angle = 1.3420000000000005
+	elif Rover.sandAreaForwardR > 1480:
+		angle = 1.3840000000000003
+	elif Rover.sandAreaForwardR > 1470:
+		angle = 1.4260000000000002
+	elif Rover.sandAreaForwardR > 1460:
+		angle = 1.468
+	elif Rover.sandAreaForwardR > 1450:
+		angle = 1.5100000000000007
+	elif Rover.sandAreaForwardR > 1440:
+		angle = 1.5520000000000005
+	elif Rover.sandAreaForwardR > 1430:
+		angle = 1.5940000000000003
+	elif Rover.sandAreaForwardR > 1420:
+		angle = 1.6360000000000001
+	elif Rover.sandAreaForwardR > 1410:
+		angle = 1.6780000000000008
+	elif Rover.sandAreaForwardR > 1400:
+		angle = 1.7200000000000006
+	elif Rover.sandAreaForwardR > 1390:
+		angle = 1.7620000000000005
+	elif Rover.sandAreaForwardR > 1380:
+		angle = 1.8040000000000003
+	elif Rover.sandAreaForwardR > 1370:
+		angle = 1.846
+	elif Rover.sandAreaForwardR > 1360:
+		angle = 1.8880000000000008
+	elif Rover.sandAreaForwardR > 1350:
+		angle = 1.9300000000000006
+	elif Rover.sandAreaForwardR > 1340:
+		angle = 1.9720000000000004
+	elif Rover.sandAreaForwardR > 1330:
+		angle = 2.0140000000000002
+	elif Rover.sandAreaForwardR > 1320:
+		angle = 2.056
+	elif Rover.sandAreaForwardR > 1310:
+		angle = 2.0980000000000008
+	elif Rover.sandAreaForwardR > 1300:
+		angle = 2.1400000000000006
+	elif Rover.sandAreaForwardR > 1290:
+		angle = 2.1820000000000004
+	elif Rover.sandAreaForwardR > 1280:
+		angle = 2.224
+	elif Rover.sandAreaForwardR > 1270:
+		angle = 2.266
+	elif Rover.sandAreaForwardR > 1260:
+		angle = 2.3080000000000007
+	elif Rover.sandAreaForwardR > 1250:
+		angle = 2.3500000000000005
+	elif Rover.sandAreaForwardR > 1240:
+		angle = 2.3920000000000003
+	elif Rover.sandAreaForwardR > 1230:
+		angle = 2.434
+	elif Rover.sandAreaForwardR > 1220:
+		angle = 2.476000000000001
+	elif Rover.sandAreaForwardR > 1210:
+		angle = 2.5180000000000007
+	elif Rover.sandAreaForwardR > 1200:
+		angle = 2.5600000000000005
+	elif Rover.sandAreaForwardR > 1190:
+		angle = 2.6020000000000003
+	elif Rover.sandAreaForwardR > 1180:
+		angle = 2.644
+	elif Rover.sandAreaForwardR > 1170:
+		angle = 2.686000000000001
+	elif Rover.sandAreaForwardR > 1160:
+		angle = 2.7280000000000006
+	elif Rover.sandAreaForwardR > 1150:
+		angle = 2.7700000000000005
+	elif Rover.sandAreaForwardR > 1140:
+		angle = 2.8120000000000003
+	elif Rover.sandAreaForwardR > 1130:
+		angle = 2.854
+	elif Rover.sandAreaForwardR > 1120:
+		angle = 2.896000000000001
+	elif Rover.sandAreaForwardR > 1110:
+		angle = 2.9380000000000006
+	elif Rover.sandAreaForwardR > 1100:
+		angle = 2.9800000000000004
+	elif Rover.sandAreaForwardR > 1090:
+		angle = 3.0220000000000002
+	elif Rover.sandAreaForwardR > 1080:
+		angle = 3.064
+	elif Rover.sandAreaForwardR > 1070:
+		angle = 3.106
+	elif Rover.sandAreaForwardR > 1060:
+		angle = 3.1479999999999997
+	elif Rover.sandAreaForwardR > 1050:
+		angle = 3.1900000000000013
+	elif Rover.sandAreaForwardR > 1040:
+		angle = 3.232000000000001
+	elif Rover.sandAreaForwardR > 1030:
+		angle = 3.274000000000001
+	elif Rover.sandAreaForwardR > 1020:
+		angle = 3.3160000000000007
+	elif Rover.sandAreaForwardR > 1010:
+		angle = 3.3580000000000005
+	elif Rover.sandAreaForwardR > 1000:
+		angle = 3.4000000000000004
+	elif Rover.sandAreaForwardR > 990:
+		angle = 3.442
+	elif Rover.sandAreaForwardR > 980:
+		angle = 3.484
+	elif Rover.sandAreaForwardR > 970:
+		angle = 3.526
+	elif Rover.sandAreaForwardR > 960:
+		angle = 3.5680000000000014
+	elif Rover.sandAreaForwardR > 950:
+		angle = 3.610000000000001
+	elif Rover.sandAreaForwardR > 940:
+		angle = 3.652000000000001
+	elif Rover.sandAreaForwardR > 930:
+		angle = 3.694000000000001
+	elif Rover.sandAreaForwardR > 920:
+		angle = 3.7360000000000007
+	elif Rover.sandAreaForwardR > 910:
+		angle = 3.7780000000000005
+	elif Rover.sandAreaForwardR > 900:
+		angle = 3.8200000000000003
+	elif Rover.sandAreaForwardR > 890:
+		angle = 3.862
+	elif Rover.sandAreaForwardR > 880:
+		angle = 3.904
+	elif Rover.sandAreaForwardR > 870:
+		angle = 3.9459999999999997
+	elif Rover.sandAreaForwardR > 860:
+		angle = 3.9880000000000013
+	elif Rover.sandAreaForwardR > 850:
+		angle = 4.030000000000001
+	elif Rover.sandAreaForwardR > 840:
+		angle = 4.072000000000001
+	elif Rover.sandAreaForwardR > 830:
+		angle = 4.114000000000001
+	elif Rover.sandAreaForwardR > 820:
+		angle = 4.156000000000001
+	elif Rover.sandAreaForwardR > 810:
+		angle = 4.198
+	elif Rover.sandAreaForwardR > 800:
+		angle = 4.24
+	elif Rover.sandAreaForwardR > 790:
+		angle = 4.282
+	elif Rover.sandAreaForwardR > 780:
+		angle = 4.324
+	elif Rover.sandAreaForwardR > 770:
+		angle = 4.366000000000001
+	elif Rover.sandAreaForwardR > 760:
+		angle = 4.408000000000001
+	elif Rover.sandAreaForwardR > 750:
+		angle = 4.450000000000001
+	elif Rover.sandAreaForwardR > 740:
+		angle = 4.492000000000001
+	elif Rover.sandAreaForwardR > 730:
+		angle = 4.534000000000001
+	elif Rover.sandAreaForwardR > 720:
+		angle = 4.5760000000000005
+	elif Rover.sandAreaForwardR > 710:
+		angle = 4.618
+	elif Rover.sandAreaForwardR > 700:
+		angle = 4.66
+	elif Rover.sandAreaForwardR > 690:
+		angle = 4.702
+	elif Rover.sandAreaForwardR > 680:
+		angle = 4.744
+	elif Rover.sandAreaForwardR > 670:
+		angle = 4.786000000000001
+	elif Rover.sandAreaForwardR > 660:
+		angle = 4.828000000000001
+	elif Rover.sandAreaForwardR > 650:
+		angle = 4.870000000000001
+	elif Rover.sandAreaForwardR > 640:
+		angle = 4.912000000000001
+	elif Rover.sandAreaForwardR > 630:
+		angle = 4.954000000000001
+	elif Rover.sandAreaForwardR > 620:
+		angle = 4.996
+	elif Rover.sandAreaForwardR > 610:
+		angle = 5.038
+	elif Rover.sandAreaForwardR > 600:
+		angle = 5.08
+	elif Rover.sandAreaForwardR > 590:
+		angle = 5.122
+	elif Rover.sandAreaForwardR > 580:
+		angle = 5.1640000000000015
+	elif Rover.sandAreaForwardR > 570:
+		angle = 5.206000000000001
+	elif Rover.sandAreaForwardR > 560:
+		angle = 5.248000000000001
+	elif Rover.sandAreaForwardR > 550:
+		angle = 5.290000000000001
+	elif Rover.sandAreaForwardR > 540:
+		angle = 5.332000000000001
+	elif Rover.sandAreaForwardR > 530:
+		angle = 5.3740000000000006
+	elif Rover.sandAreaForwardR > 520:
+		angle = 5.416
+	elif Rover.sandAreaForwardR > 510:
+		angle = 5.458
