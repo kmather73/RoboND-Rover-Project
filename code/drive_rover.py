@@ -135,7 +135,9 @@ class RoverState():
         self.prevLocationValid = False
         self.preListSum = 0.0
         self.preN = 1
-
+        self.rocksCollected = 0
+        self.startPos = None
+        self.nav_anglesH = None
 def roverDist(Rover):
     return np.sqrt((Rover.pos[0]-Rover.prevLocation[0])**2 + (Rover.pos[1]-Rover.prevLocation[1])**2) 
 

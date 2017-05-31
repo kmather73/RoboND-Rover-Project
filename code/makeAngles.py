@@ -1,7 +1,7 @@
 
 areaLower = 650
 areaUpper = 3000
-angleLower = 8.2
+angleLower = 8
 angleUpper = -5
 stepSizeArea = 20
 

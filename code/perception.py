@@ -14,6 +14,10 @@ def rover_coords(binary_img):
     y_pixel = -(xpos - binary_img.shape[0]).astype(np.float)
     return x_pixel, y_pixel
 
+def rover_coords2(xpos, ypos, shape):
+    x_pixel = np.absolute(ypos - shape).astype(np.float)
+    y_pixel = -(xpos - shape).astype(np.float)
+    return x_pixel, y_pixel
 
 # Define a function to convert to radial coords in rover space
 def to_polar_coords(x_pixel, y_pixel):
@@ -42,6 +46,12 @@ def translate_pix(xpix_rot, ypix_rot, xpos, ypos, scale):
     
     return xpix_translated, ypix_translated
 
+def untranslate_pix(xpix_trans, ypix_trans, xpos, ypos, scale): 
+    xpix_rot = (xpix_trans - xpos)* scale
+    ypix_rot = (ypix_trans - ypos)* scale
+
+    return xpix_rot, ypix_rot
+
 def correct4Roll(xpix, ypix, roll):
     roll_rad = roll * np.pi / 180.0
     return np.cos(roll_rad)*xpix, ypix
@@ -57,7 +67,7 @@ def correct4Pitch(xpix, ypix, pitch):
 # Once you define the two functions above this function should work
 def pix_to_world(xpix, ypix, xpos, ypos, yaw, pitch, roll, world_size, scale):
     #xpix, ypix = correct4Roll(xpix, ypix, roll)
-    xpix, ypix = correct4Pitch(xpix, ypix, pitch)
+    #xpix, ypix = correct4Pitch(xpix, ypix, pitch)
     # Apply rotation
     xpix_rot, ypix_rot = rotate_pix(xpix, ypix, yaw)
     # Apply translation
@@ -68,6 +78,26 @@ def pix_to_world(xpix, ypix, xpos, ypos, yaw, pitch, roll, world_size, scale):
     # Return the result
     return x_pix_world, y_pix_world
 
+def getHomeDirection(Rover):
+    (x,y) = Rover.startPos
+    worldsize = 200
+    scale = 22
+
+    x = np.array([x])
+    y = np.array([y])
+
+    xpix, ypix = world_to_pix(x, y, Rover.pos[0], Rover.pos[1], Rover.yaw,Rover.pitch, Rover.roll, worldsize, scale)
+    
+    x_pixelsH, y_pixelsH = xpix, ypix #rover_coords2(xpix, ypix, Rover.img.shape[0])
+    distH, anglesH = to_polar_coords(x_pixelsH, y_pixelsH)
+    #Rover.nav_distsH = distH
+    Rover.nav_anglesH = anglesH
+
+def world_to_pix(xworld, yworld, xpos, ypos, yaw, pitch, roll, world_size, scale):
+    xpix_rot, ypix_rot = untranslate_pix(xworld, yworld, xpos, ypos, scale)
+    xpix, ypix = rotate_pix(xpix_rot, ypix_rot, -yaw)
+    return xpix, ypix
+
 
 def convertFindings2world(threshold, Rover):
     # 4) Convert thresholded image pixel values to rover-centric coords
@@ -75,6 +105,16 @@ def convertFindings2world(threshold, Rover):
     # 5) Convert rover-centric pixel values to world coords
     worldsize = 200
     scale = 22
+    x_world, y_world = pix_to_world(x_pixels, y_pixels, Rover.pos[0], Rover.pos[1], Rover.yaw,Rover.pitch, Rover.roll, worldsize, scale)
+
+    return x_world, y_world
+
+def convertFindings2world2(threshold, Rover):
+    # 4) Convert thresholded image pixel values to rover-centric coords
+    x_pixels, y_pixels = rover_coords(threshold)
+    # 5) Convert rover-centric pixel values to world coords
+    worldsize = 200
+    scale = 36
     x_world, y_world = pix_to_world(x_pixels, y_pixels, Rover.pos[0], Rover.pos[1], Rover.yaw,Rover.pitch, Rover.roll, worldsize, scale)
 
     return x_world, y_world
@@ -104,7 +144,7 @@ def correctForAngles(img, roll, pitch, yaw):
     return outputImage
 
 def extremeAngles(pitch, roll):
-    p_thresh = 0.75
+    p_thresh = 0.45
     r_thresh = 1.1
 
     return (pitch > p_thresh and pitch < 360-p_thresh) or (roll > r_thresh and roll < 360-r_thresh)
@@ -133,11 +173,10 @@ def fillMapHoles(Rover):
     cv2.fillPoly(img, contours , 1)
     
     kernel = np.ones((5,5), np.uint8)
-    cv2.erode(img, kernel, iterations = 1)
-    cv2.dilate(img, kernel, iterations = 1)
-
+    cv2.erode(img, kernel, iterations = 2)
+    
     ypos, xpos = img.nonzero()
-    Rover.worldmap[ypos, xpos, 2] += 1
+    Rover.worldmap[ypos, xpos, 2] += 10
 
 
 
@@ -182,21 +221,12 @@ def perception_look_for_sand(Rover, warped):
 
     # 4) Update Rover.vision_image
     rock = rock_threshold(warped)
-    sand2 = inSideOfWalls(sand, rock)
+    sand2= inSideOfWalls(sand, rock)
+    ssand = cv2.bitwise_or(sand, sand2)
 
     kernel = np.ones((5,5),np.uint8)
-    #sand = cv2.erode(sand, kernel, iterations = 1)
-    sand = cv2.dilate(sand, kernel,iterations = 1)
-    
-    #sand2 = cv2.erode(sand2, kernel, iterations = 1)
-    #sand2 = cv2.dilate(sand2,kernel,iterations = 1)
-
-    ssand = cv2.bitwise_and(sand, sand2)
-    
-    
+    ssand = cv2.dilate(ssand,kernel,iterations = 1)
     ssand = cv2.erode(ssand, kernel, iterations = 1)
-    #ssand = cv2.dilate(ssand, kernel,iterations = 1)
-    ssand = maskReduceMap(ssand)
 
     Rover.vision_image[:,:, 2] = ssand
 
@@ -207,8 +237,8 @@ def perception_look_for_sand(Rover, warped):
 
     
     # 7) Update Rover worldmap
-    if not extremeAngles(Rover.pitch, Rover.roll):
-        Rover.worldmap[sand_y_world, sand_x_world, 2] += 1
+    #if not extremeAngles(Rover.pitch, Rover.roll):
+        #Rover.worldmap[sand_y_world, sand_x_world, 2] += 1
 
     # 8) Convert rover-centric pixel positions to polar coordinates
     # Update Rover pixel distances and angles
@@ -224,7 +254,15 @@ def perception_look_for_sand(Rover, warped):
     Rover.nav_anglesF = anglesF
 
     
+def look4sand2(Rover, img):
+    warped = perspect_transform_mapping(img)
+    sand = sand_threshold(warped)
+    sand_x_world, sand_y_world = convertFindings2world2(sand, Rover)
 
+    
+    # 7) Update Rover worldmap
+    if not extremeAngles(Rover.pitch, Rover.roll):
+        Rover.worldmap[sand_y_world, sand_x_world, 2] += 1
 
 def perception_look_for_rocks(Rover, warped):
     # 3) Apply color threshold to identify walls and rocks
@@ -260,12 +298,7 @@ def perception_look_for_rocks(Rover, warped):
 
     Rover.rockAreaForward = Rover.rockAreaForwardLeft + Rover.rockAreaForwardRight
     # 4) Update Rover.vision_image
-    sand = sand_threshold(warped)
-    reduecdRock = reducedWalls2(rock, sand)
-
-    reduecdRock = maskReduceMap(reduecdRock)
-    rock = maskReduceMap(rock)
-
+    reduecdRock = reducedWalls(rock)
     Rover.vision_image[:,:, 0] = reduecdRock
 
     # 5) Convert map image pixel values to rover-centric coords
@@ -277,6 +310,20 @@ def perception_look_for_rocks(Rover, warped):
     if not extremeAngles(Rover.pitch, Rover.roll):
         Rover.worldmap[reduecdRock_y_world, reduecdRock_x_world, 0] += 2
         Rover.hiddenRockMap[rock_y_world, rock_x_world] += 1
+        #(x,y) = Rover.startPos
+        #delta = 1
+        #Rover.worldmap[y-delta:y+delta, x-delta: x+delta, 0] = 50
+
+def look4rocks2(Rover, img):
+    warped = perspect_transform_mapping(img)
+    rock = rock_threshold(warped)
+    reduecdRock = reducedWalls(rock)
+    rock_x_world, rock_y_world = convertFindings2world2(reduecdRock, Rover)
+
+    
+    # 7) Update Rover worldmap
+    if not extremeAngles(Rover.pitch, Rover.roll):
+        Rover.worldmap[rock_y_world, rock_x_world, 0] += 2
 
 def perception_look_for_balls(Rover, warped):
     
@@ -286,6 +333,7 @@ def perception_look_for_balls(Rover, warped):
     Rover.ballArea = ballArea if bn is not None else 0
     Rover.seeTheBall = True if bn is not None else False
 
+    
     # 4) Update Rover.vision_image
     Rover.vision_image[:,:, 1] = ball
     
@@ -314,19 +362,25 @@ def perception_step(Rover):
     # NOTE: camera image is coming to you in Rover.img
     
     #Rover.img = blurImg(Rover.img)
-    img = blurImg(Rover.img)
+    #img = blurImg(Rover.img)
     img = Rover.img
 
-    #correctionAngle = Rover.roll-360 if Rover.roll > 180 else -Rover.roll
+    
     correctionAngle = Rover.roll
     Rover.img = img = correctRotateImage(img, correctionAngle)
     warped = perspect_transform(img)
 
 
     perception_look_for_sand(Rover, warped)
+    look4sand2(Rover, img)
+
     perception_look_for_rocks(Rover, warped)
     perception_look_for_balls(Rover, warped)
-    fillMapHoles(Rover)
+    
 
+    fillMapHoles(Rover)
+    getHomeDirection(Rover)
+    
     Rover.wasExtreme = extremeAngles(Rover.pitch, Rover.roll)
+    
     return Rover

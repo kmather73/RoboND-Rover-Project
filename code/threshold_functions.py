@@ -8,6 +8,19 @@ def get_perspect_transform(img, src, dst):
     
     return warped
 
+def perspect_transform_mapping(image):
+    dst_size = 18
+    bottom_offset = 7
+    source = np.float32([[14, 140], [301 ,140],[200, 96], [118, 96]])
+    destination = np.float32([
+                  [image.shape[1]/2 - dst_size, image.shape[0] - bottom_offset],
+                  [image.shape[1]/2 + dst_size, image.shape[0] - bottom_offset],
+                  [image.shape[1]/2 + dst_size, image.shape[0] - 2*dst_size - bottom_offset], 
+                  [image.shape[1]/2 - dst_size, image.shape[0] - 2*dst_size - bottom_offset],
+                  ])
+
+    return get_perspect_transform(image, source, destination)
+
 def perspect_transform(image):
     dst_size = 11
     bottom_offset = 7

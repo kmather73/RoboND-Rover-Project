@@ -15,26 +15,17 @@ def decision_step(Rover):
     # Check if we have vision data to make decisions with
     
     correctForBadState(Rover)
-    if Rover.nav_angles is not None and not Rover.picking_up:
+    if Rover.nav_angles is not None and not Rover.picking_up and Rover.mode != "Completed Challenge":
         if True or not Rover.wasExtreme:
             # Check for Rover.mode status
-            if Rover.mode == "move to ball":
-                moveToBall(Rover)
-
-            elif Rover.mode == 'pick_up':
-                pickUpBall(Rover)
-
-            #elif Rover.mode == 'forward': 
-                #movingForward(Rover)
-            #elif Rover.mode == 'stop':
-            #    isStoped(Rover)
-
-            elif Rover.mode == 'corner':
-                inCorner(Rover)
-            else:
-                hugWall(Rover)
+            hugWall(Rover)
         else:
             print("### EXTREME ANGLE")
+    
+    elif Rover.mode == "Completed Challenge":
+        #printDebugInfo(Rover)
+        print("******** Challenge Completed, NASA Take Me Home!!!  ********")
+
     # Just to make the rover do something 
     # even if no modifications have been made to the code
     else:
@@ -126,15 +117,26 @@ def amStuckQuestion(Rover):
 def canPickUpQuestion(Rover):
     return Rover.near_sample and not Rover.picking_up and abs(Rover.vel) < 0.05
 
-def roverDist(Rover):
-    return np.sqrt((Rover.pos[0]-Rover.prevLocation[0])**2 + (Rover.pos[1]-Rover.prevLocation[1])**2) 
+def returnHomeQuestion(Rover):
+    return Rover.rocksCollected >= 6 and distanceHome(Rover) < 12
 
+def distanceHome(Rover):
+    return L2(Rover.pos, Rover.startPos)
+
+def roverDist(Rover):
+    return L2(Rover.pos, Rover.prevLocation)
+
+def L2(p1, p2):
+    return np.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2 )
 
 def hugWall(Rover):
     findOutMode(Rover)
     
     if Rover.mode == "Picking Up":
         hugWallPickUpBall(Rover)
+    
+    elif Rover.mode == "Can Pick Up":
+        hugwallStartPickUp(Rover)
 
     elif Rover.mode == "Full Corner":
         hugWallInCornerState(Rover)
@@ -163,7 +165,7 @@ def hugWall(Rover):
     elif Rover.mode == "Turn Around":
         hugWallBackup(Rover)
     
-    elif Rover.mode == "Move To Ball 2":
+    elif Rover.mode == "Move To Ball":
         hugWallMoveToBall(Rover)
 
     elif Rover.mode == "Rock Ahead":
@@ -179,8 +181,8 @@ def hugWall(Rover):
         #movingForward(Rover)
         hugWallMoveForward(Rover)
 
-    elif Rover.mode == "Can Pick Up":
-        hugwallStartPickUp(Rover)
+    elif Rover.mode == "Return Home":
+        hugWallReturnHome(Rover)
     else:
         print("$$$$$$$$$$$$$$4 doing somehting at stop")
         #printDebugInfo(Rover)
@@ -196,6 +198,9 @@ def findOutMode(Rover):
 
     elif Rover.wasExtreme:
         nextMode = Rover.PreviousMode
+    
+    elif returnHomeQuestion(Rover):
+        nextMode = "Return Home"
 
     elif canPickUpQuestion(Rover):
         nextMode = "Can Pick Up"
@@ -207,7 +212,7 @@ def findOutMode(Rover):
         nextMode = "Rock Ahead"
 
     elif seeBallQuestion(Rover):
-        nextMode = "Move To Ball 2"
+        nextMode = "Move To Ball"
 
     elif needToTurnAroundQuestion(Rover):
         nextMode = "Turn Around"
@@ -270,6 +275,36 @@ def hugWallStuck(Rover):
         Rover.mode = "Forward"
         Rover.sameState = 1
 
+def runTurnAngle(Rover):
+    dx = Rover.startPos[0] - Rover.pos[0]
+    dy = Rover.startPos[1] - Rover.pos[1]
+
+    #angle = np.arctan2(dy, dx) * 180/np.pi
+    angle = np.mean(Rover.nav_anglesH) * 180/np.pi
+
+    return angle
+
+def hugWallReturnHome(Rover):
+    if distanceHome(Rover) < 0.5:
+            Rover.brake = 100
+            Rover.mode = "Completed Challenge"
+    
+    elif Rover.vel > 0.45:
+            Rover.throttle = -.175
+            Rover.brakes = 1.5
+    
+    elif Rover.vel < -0.45:
+            Rover.throttle = Rover.throttle_set
+            Rover.brakes = 1.5
+    else:
+        
+        Rover.brake = 0
+        Rover.throttle = 0.125
+        angle = runTurnAngle(Rover)
+        Rover.steer = np.clip(angle, -15, 15)
+
+
+
 
 def hugWallMoveForward(Rover):
     Rover.throttle = Rover.throttle_set
@@ -301,6 +336,7 @@ def hugwallStartPickUp(Rover):
     Rover.pick_up = True
     
     Rover.send_pickup = True
+    Rover.rocksCollected += 1
     Rover.mode = "Picking Up"
 
 def hugWallPickUpBall(Rover):
@@ -322,11 +358,11 @@ def signOfNum(x):
 def hugWallMoveToBall(Rover):
     if Rover.near_sample:
         if Rover.vel > 0.25:
-            Rover.throttle = -.175
-            Rover.brakes = 1
+            Rover.throttle = -1.75
+            Rover.brakes = 9.5
         elif Rover.vel < -0.25:
             Rover.throttle = Rover.throttle_set
-            Rover.brakes = 1
+            Rover.brakes = 9.5
         else:
             hugwallStartPickUp(Rover)
 
@@ -576,25 +612,25 @@ def correctForBadState(Rover):
 
 def printDebugInfo(Rover):
     print()
-    print("-"*63)
-    print("|    Mode    |  OldMode  |   Position   | Dist 2 last Postion |")
-    print("-"*63)
-    print("|{:^12}|{:^12}| ({:4.1f}, {:4.1f}) |{:^18.4} |".format(Rover.mode, Rover.PreviousMode, Rover.pos[0], Rover.pos[1], roverDist(Rover)))
-    print("-"*63)
-
-    print()
-    print("-"*42)
-    print("| Near Sample |  Picking up | Same State |")
-    print("-"*42)
-    print("|{:^13}|{:^13}|{:11}|".format(Rover.near_sample, Rover.picking_up, Rover.sameState))
-    print("-"*42)
+    print("-"*77)
+    print("|    Mode    |  OldMode  |   Position   | Dist 2 last Postion | Dist 2 Home |")
+    print("-"*77)
+    print("|{:^12}|{:^12}| ({:4.1f}, {:4.1f}) |{:^19.4}|{:^14.4}|".format(Rover.mode, Rover.PreviousMode, Rover.pos[0], Rover.pos[1], roverDist(Rover), distanceHome(Rover)))
+    print("-"*77)
 
     print()
     print("-"*60)
-    print("| Steer | Throttle | Speed |  Break | M-Throttle | M-Speed |")
+    print("| Near Sample |  Picking up | Rocks Collected | Same State |")
     print("-"*60)
-    print("| {:^5.2f} | {:^8.2f} | {:^5.2f} | {:^6} |{:^12.2f}|{:^9.2f}|".format(Rover.steer, Rover.throttle, Rover.vel, Rover.brake, Rover.throttle_set, Rover.max_vel))
+    print("|{:^13}|{:^13}|{:^17}|{:^12}|".format(Rover.near_sample, Rover.picking_up, Rover.rocksCollected, Rover.sameState))
     print("-"*60)
+
+    print()
+    print("-"*70)
+    print("| Steer | H-Angle | Throttle | Speed |  Break | M-Throttle | M-Speed |")
+    print("-"*70)
+    print("| {:^5.2f} |{:^9.3f}| {:^8.2f} | {:^5.2f} | {:^6} |{:^12.2f}|{:^9.2f}|".format(Rover.steer, runTurnAngle(Rover),  Rover.throttle, Rover.vel, Rover.brake, Rover.throttle_set, Rover.max_vel))
+    print("-"*70)
 
 
     print()
@@ -615,6 +651,24 @@ def printDebugInfo(Rover):
     print("| Rock | {:>7.1F} | {:>7.1F} | {:>9.1F} | {:>9.1F} |".format(Rover.rockAreaUpper, Rover.rockAreaLower, Rover.rockAreaForwardLeft, Rover.rockAreaForwardRight))
     print("-"*52)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+################################################################
+###################### DEAD CODE ###############################
+################################################################
 def movingForward(Rover):
     # Check the extent of navigable terrain
     if Rover.sandArea >= Rover.minOpenArea: # len(Rover.nav_angles) >= Rover.stop_forward:  

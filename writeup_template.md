@@ -1,62 +1,105 @@
-## Project: Search and Sample Return
-### Writeup Template: You can use this file as a template for your writeup if you want to submit it as a markdown file, but feel free to use some other method and submit a pdf if you prefer.
-
----
-
-
-**The goals / steps of this project are the following:**  
-
-**Training / Calibration**  
-
-* Download the simulator and take data in "Training Mode"
-* Test out the functions in the Jupyter Notebook provided
-* Add functions to detect obstacles and samples of interest (golden rocks)
-* Fill in the `process_image()` function with the appropriate image processing steps (perspective transform, color threshold etc.) to get from raw images to a map.  The `output_image` you create in this step should demonstrate that your mapping pipeline works.
-* Use `moviepy` to process the images in your saved dataset with the `process_image()` function.  Include the video you produce as part of your submission.
-
-**Autonomous Navigation / Mapping**
-
-* Fill in the `perception_step()` function within the `perception.py` script with the appropriate image processing functions to create a map and update `Rover()` data (similar to what you did with `process_image()` in the notebook). 
-* Fill in the `decision_step()` function within the `decision.py` script with conditional statements that take into consideration the outputs of the `perception_step()` in deciding how to issue throttle, brake and steering commands. 
-* Iterate on your perception and decision function until your rover does a reasonable (need to define metric) job of navigating and mapping.  
-
 [//]: # (Image References)
 
 [image1]: ./misc/rover_image.jpg
 [image2]: ./calibration_images/example_grid1.jpg
 [image3]: ./calibration_images/example_rock1.jpg 
 
-## [Rubric](https://review.udacity.com/#!/rubrics/916/view) Points
-### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
+[image4]: ./output/sand_colour_spaces.png
+[image5]: ./output/rock_colour_spaces.png
+[image6]: ./output/ball_colour_spaces.png
+[image7]: ./output/combined.png
+[image8]: ./output/sim.png
 
----
-### Writeup / README
-
-#### 1. Provide a Writeup / README that includes all the rubric points and how you addressed each one.  You can submit your writeup as markdown or pdf.  
-
-You're reading it!
-
-### Notebook Analysis
-#### 1. Run the functions provided in the notebook on test images (first with the test data provided, next on data you have recorded). Add/modify functions to allow for color selection of obstacles and rock samples.
-Here is an example of how to include an image in your writeup.
+## Search and Sample Return Project
 
 ![alt text][image1]
 
-#### 1. Populate the `process_image()` function with the appropriate analysis steps to map pixels identifying navigable terrain, obstacles and rock samples into a worldmap.  Run `process_image()` on your test data using the `moviepy` functions provided to create video output of your result. 
-And another! 
+This project is modeled after the [NASA sample return challenge](https://www.nasa.gov/directorates/spacetech/centennial_challenges/sample_return_robot/index.html)
 
-![alt text][image2]
+## The Simulator
+The first step is to download the simulator build that's appropriate for your operating system.  Here are the links for [Linux](https://s3-us-west-1.amazonaws.com/udacity-robotics/Rover+Unity+Sims/Linux_Roversim.zip), [Mac](https://s3-us-west-1.amazonaws.com/udacity-robotics/Rover+Unity+Sims/Mac_Roversim.zip), or [Windows](https://s3-us-west-1.amazonaws.com/udacity-robotics/Rover+Unity+Sims/Windows_Roversim.zip).  
+
+
+## Dependencies
+Python 3 + OpenCV, and Jupyter Notebooks
+
+---
+
+### Computer Vision Analysis
+#### Identifying Sand, Obstacles and Rocks
+ To identify the Obstacle in the field of view we looked at different colour space segment them for the the range of colour we are looking for, for example when looking for the the rock walls we are generlly looking for a blackish brown colour. 
+These actions are preformed in the `Diferent Colour Spaces Thresholds`, `Sand Threshold`, `Rock Threshold` and `Ball Threshold` sections of the Jupyter Notebook.
+
+
+![alt text][image4]
+![alt text][image5]
+![alt text][image6]
+![alt text][image7]
+
+
+#### Processing of Images
+The first step to processing an incoming is to apply a perspective transform on it to get a bird's eye view of the environment. Next we apply our three threshold functions to identify the the sand, walls and the rock samples that are inview.
+ 
+After finding each of these we then convert the pixel locations to a position in the local rover coordinate system then to our global world coordinate system.
+ 
+Finally we update our map, marking it with our findindings.
+ 
+Here is a video of our pipeline on the sample [video](./output/test_mapping2.mp4)
+
+
+
+
+
+
 ### Autonomous Navigation and Mapping
 
-#### 1. Fill in the `perception_step()` (at the bottom of the `perception.py` script) and `decision_step()` (in `decision.py`) functions in the autonomous mapping scripts and an explanation is provided in the writeup of how and why these functions were modified as they were.
+In the `perception_step()` we look for each of the sand, walls and rock samples pixels and then translate them to our world coordinate system to be used in the `decision_step()` of our pipeline.
+ 
+Also we try to correct for the roll of the rover,  as well as making note if we have either an extreme value of pitch or roll.
+ 
+ 
+In the `decision_step()` we build a [DFA](https://en.wikipedia.org/wiki/Deterministic_finite_automaton) which make choices to transition from state to state primarily based on the size of the sand area and rock wall area in front of the rover.
+The possible state are 
+
+| Possible State |
+|:--------------:|
+|Forward|
+|Stuck|
+|Rock Ahead|
+|Move To Ball|
+|Can Pick Up|
+|Picking Up|
+|Turn Around|
+|Open Area|
+|Corridor|
+|Left Wall|
+|Right Wall|
+|Front Wall|
+|Left Corner|
+|Right Corner|    
+|Full Corner|
+|Return Home|
+|Completed Challenge|
+
+#### Autonomous Mode
+To lunch in autonomous mode open a terminal and run the `drive_rover.py` file. Call it at the command line like this: 
+
+```sh
+python drive_rover.py
+```  
+Then launch the simulator and choose "Autonomous Mode".  The rover should drive itself now! 
+
+#### Results
+![alt text][image8]
+
+When launching in autonomous mode the rover is able to navigate the environment and map 
+95+% with a fidelity of about 65%. It is able to  find all of the rock samples, pick them up, and return home.
+
+The simulator was run at 1024x768 on Good quality with about 26-28 fps.
+**Note: running the simulator with different choices of resolution and graphics quality may produce different results!
 
 
-#### 2. Launching in autonomous mode your rover can navigate and map autonomously.  Explain your results and how you might improve them in your writeup.  
+#### Issues and Improvements
+The pipeline can fail when it gets really stuck in a Wall/Rock sometimes, it can get unstuck if you give it enough time. This is due to the edge detection/collision of the simulator.
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
-
-
-
-![alt text][image3]
-
-
+The pipline could be improved by doing some path planing and moving in the direction of unexplored area.
